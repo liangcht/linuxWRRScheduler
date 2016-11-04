@@ -1008,10 +1008,10 @@ struct sched_entity {
 
 struct sched_wrr_entity {
 	struct list_head run_list;
+	int weight;
 	unsigned long timeout;
-	unsigned long watchdog_stamp;
 	unsigned int time_slice;
-	struct sched_rt_entity *back;
+	struct sched_wrr_entity *back;
 };
 
 struct sched_rt_entity {

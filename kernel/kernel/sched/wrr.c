@@ -2,7 +2,47 @@
 
 #include <linux/slab.h>
 
-/*TODO: wrr_rq_of_se(wrr_se)*/
+
+#define for_each_sched_wrr_entity(wrr_se)\
+	for(; wrr_se; wrr_se = NULL)
+
+static void requeue_task_wrr(struct rq *rq, struct task_struct *p, int head)
+{
+	struct sched_wrr_entity *wrr_se = &p->wrr;
+	struct wrr_rq *wrr_rq = rq->wrr_rq;
+	
+	for_each_sched_wrr_entity(wrr_se) 
+		list_move_tail(&wrr_se->run_list, wrr_rq);
+}
+
+static void task_tick_wrr(struct rq *rq, struct task_struct *p, int queued)
+{
+	struct sched_wrr_entity *wrr_se = &p->wrr;
+
+
+	if (--p->wrr.time_slice)
+		return;
+	
+	if (wrr_se->weight > 1)
+		wrr_se->weight--;
+	wrr_se->time_slice = wrr_se->weight * 10;
+
+	/*
+	 * Requeue to the end of queue if we (and all of our ancestors) are not
+	 * the
+	 * only element on the queue
+	 */
+	for_each_sched_wrr_entity(wrr_se) {
+		if (wrr_se->run_list.prev != wrr_se->run_list.next) {
+			requeue_task_wrr(rq, p, 0);
+			set_tsk_need_resched(p);
+			return;
+		}
+	}
+}
+
+
+
 /*
  * Update the current task's runtime statistics. Skip current tasks that
  * are not in our scheduling class.
@@ -31,7 +71,7 @@ const struct sched_class wrr_sched_class = {
 #endif
 
 	.set_curr_task          = set_curr_task_rt,
-	.task_tick		= task_tick_rt,
+	.task_tick		= task_tick_wrr,
 
 	.get_rr_interval	= get_rr_interval_rt,
 
