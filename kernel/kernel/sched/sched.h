@@ -324,6 +324,17 @@ static inline int rt_bandwidth_enabled(void)
 {
 	return sysctl_sched_rt_runtime >= 0;
 }
+/* Real-Time classes' related field in a runqueue: */
+struct wrr_rq {
+	struct list_head queue;
+	unsigned int wrr_nr_running;
+#ifdef CONFIG_SMP
+	unsigned long wrr_nr_migratory;
+	unsigned long wrr_nr_total;
+	int overloaded;
+	struct plist_head pushable_tasks;
+#endif
+};
 
 /* Real-Time classes' related field in a runqueue: */
 struct rt_rq {
@@ -422,6 +433,7 @@ struct rq {
 
 	struct cfs_rq cfs;
 	struct rt_rq rt;
+	struct wrr_rq wrr;
 
 #ifdef CONFIG_FAIR_GROUP_SCHED
 	/* list of leaf cfs_rq on this cpu: */

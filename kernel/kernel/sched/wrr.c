@@ -5,6 +5,41 @@
 
 #define for_each_sched_wrr_entity(wrr_se)\
 	for(; wrr_se; wrr_se = NULL)
+static void 
+__enqueue_wrr_entity(struct rq *rq, struct sched_wrr_entity *wrr_se, bool head)
+{
+	struct wrr_rq *wrr_rq = rq->wrr;
+	//struct rt_prio_array *array = &rt_rq->active;
+	//struct rt_rq *group_rq = group_rt_rq(rt_se);
+	//struct list_head *queue = array->queue + rt_se_prio(rt_se);
+
+	if (head)
+		list_add(&wrr_se->run_list, wrr_rp->queue);
+	else
+		list_add_tail(&wrr_se->run_list, wrr_rq->queue);
+	wrr_rp->wrr_nr_running++;
+}
+
+static void 
+enqueue_wrr_entity(struct rq *rq, struct sched_wrr_entity *wrr_se, bool head)
+{
+	for_each_sched_wrr_entity(wrr_se)
+		__enqueue_wrr_entity(rq, wrr_se, head);
+}
+
+static void
+enqueue_task_wrr(struct rq *rq, struct task_struct *p, int flags)
+{
+	struct sched_wrr_entity *wrr_se = &p->wrr;
+
+	enqueue_wrr_entity(rq, wrr_se, flags & ENQUEUE_HEAD);
+
+	/* TODO: Do check again when implementing SMP */
+	if (!task_current(rq, p) && p->nr_cpus_allowed > 1)
+		enqueue_pushable_task(rq, p);
+
+	inc_nr_running(rq);
+}
 
 static void requeue_task_wrr(struct rq *rq, struct task_struct *p, int head)
 {
@@ -12,7 +47,7 @@ static void requeue_task_wrr(struct rq *rq, struct task_struct *p, int head)
 	struct wrr_rq *wrr_rq = rq->wrr_rq;
 	
 	for_each_sched_wrr_entity(wrr_se) 
-		list_move_tail(&wrr_se->run_list, wrr_rq);
+		list_move_tail(&wrr_se->run_list, wrr_rq->queue);
 }
 
 static void task_tick_wrr(struct rq *rq, struct task_struct *p, int queued)
@@ -73,8 +108,5 @@ const struct sched_class wrr_sched_class = {
 	.set_curr_task          = set_curr_task_rt,
 	.task_tick		= task_tick_wrr,
 
-	.get_rr_interval	= get_rr_interval_rt,
-
-	.prio_changed		= prio_changed_rt,
 	.switched_to		= switched_to_rt,
 };
