@@ -1,6 +1,42 @@
 #include "sched.h"
 
 #include <linux/slab.h>
+static void set_curr_task_wrr(struct rq *rq)
+{
+	/* Do nothing */
+}
+static void put_prev_task_wrr(struct rq *rq, struct task_struct *p)
+{
+	/* Do nothiing */
+}
+
+static void 
+check_preempt_curr_wrr(struct rq *rq, struct task_struct *p, int flags)
+{
+	/* Do nothiing */
+	/* Since there is no priority in wrr scheduler, we don't have to 
+	 * schedule the new task and preempt the exsiting one.
+	 */
+}
+
+static inline struct task_struct *wrr_task_of(struct sched_wrr_entity *wrr_se)
+{
+	return container_of(wrr_se, struct task_struct, wrr);
+}
+
+static struct task_struct *pick_next_task_rt(struct rq *rq)
+{
+	struct task_struct *p;
+	struct wrr_rq *wrr_rq;
+	struct sched_wrr_entity *next = NULL;
+
+	wrr_rq = &rq->wrr;
+
+	next = list_entry(wrr_rq->queue, struct sched_wrr_entity, run_list);
+	p = wrr_task_of(wrr_se);
+	
+	return p;
+}
 
 static void dequeue_task_wrr(struct rq *rq, struct task_struct *p, int flags)
 {
@@ -68,14 +104,13 @@ static void task_tick_wrr(struct rq *rq, struct task_struct *p, int queued)
  */
 const struct sched_class wrr_sched_class = {
 	.next			= &fair_sched_class,
-	.enqueue_task		= enqueue_task_rt,
-	.dequeue_task		= dequeue_task_rt,
-	.yield_task		= yield_task_rt,
+	.enqueue_task		= enqueue_task_wrr,
+	.dequeue_task		= dequeue_task_wrr,
 
-	.check_preempt_curr	= check_preempt_curr_rt,
+	.check_preempt_curr	= check_preempt_curr_wrr,
 
-	.pick_next_task		= pick_next_task_rt,
-	.put_prev_task		= put_prev_task_rt,
+	.pick_next_task		= pick_next_task_wrr,
+	.put_prev_task		= put_prev_task_wrr,
 
 #ifdef CONFIG_SMP
 	.select_task_rq		= select_task_rq_rt,
@@ -89,7 +124,7 @@ const struct sched_class wrr_sched_class = {
 	.switched_from		= switched_from_rt,
 #endif
 
-	.set_curr_task          = set_curr_task_rt,
+	.set_curr_task          = set_curr_task_wrr,
 	.task_tick		= task_tick_wrr,
 
 	.switched_to		= switched_to_rt,
