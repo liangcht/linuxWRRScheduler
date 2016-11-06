@@ -1623,6 +1623,9 @@ static void __sched_fork(struct task_struct *p)
 #endif
 
 	INIT_LIST_HEAD(&p->rt.run_list);
+	INIT_LIST_HEAD(&p->wrr.run_list);
+	p->wrr.weight = 10;
+	p->wrr.time_slice = 10 * 10;
 
 #ifdef CONFIG_PREEMPT_NOTIFIERS
 	INIT_HLIST_HEAD(&p->preempt_notifiers);
@@ -1688,6 +1691,7 @@ void sched_fork(struct task_struct *p)
 	 */
 	if (unlikely(p->sched_reset_on_fork)) {
 		if (task_has_rt_policy(p)) {
+			/* TODO : Change to SCHED_WRR after default set to wrr*/
 			p->policy = SCHED_NORMAL;
 			p->static_prio = NICE_TO_PRIO(0);
 			p->rt_priority = 0;
@@ -1704,6 +1708,7 @@ void sched_fork(struct task_struct *p)
 		p->sched_reset_on_fork = 0;
 	}
 
+	/* TODO: Set to &wrr_sched_class when change default to wrr*/
 	if (!rt_prio(p->prio))
 		p->sched_class = &fair_sched_class;
 
