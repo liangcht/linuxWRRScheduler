@@ -1,6 +1,11 @@
 #include "sched.h"
 
 #include <linux/slab.h>
+static void switched_to_rt(struct rq *rq, struct task_struct *p)
+{
+	/* Do nothing */
+}
+
 static void set_curr_task_wrr(struct rq *rq)
 {
 	/* Do nothing */
@@ -113,6 +118,7 @@ const struct sched_class wrr_sched_class = {
 	.put_prev_task		= put_prev_task_wrr,
 
 #ifdef CONFIG_SMP
+	/*
 	.select_task_rq		= select_task_rq_rt,
 
 	.set_cpus_allowed       = set_cpus_allowed_rt,
@@ -122,10 +128,11 @@ const struct sched_class wrr_sched_class = {
 	.post_schedule		= post_schedule_rt,
 	.task_woken		= task_woken_rt,
 	.switched_from		= switched_from_rt,
+	*/
 #endif
 
 	.set_curr_task          = set_curr_task_wrr,
 	.task_tick		= task_tick_wrr,
 
-	.switched_to		= switched_to_rt,
+	.switched_to		= switched_to_wrr,
 };
