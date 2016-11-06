@@ -1,7 +1,7 @@
 #include "sched.h"
 
 #include <linux/slab.h>
-static void switched_to_rt(struct rq *rq, struct task_struct *p)
+static void switched_to_wrr(struct rq *rq, struct task_struct *p)
 {
 	/* Do nothing */
 }
@@ -29,7 +29,7 @@ static inline struct task_struct *wrr_task_of(struct sched_wrr_entity *wrr_se)
 	return container_of(wrr_se, struct task_struct, wrr);
 }
 
-static struct task_struct *pick_next_task_rt(struct rq *rq)
+static struct task_struct *pick_next_task_wrr(struct rq *rq)
 {
 	struct task_struct *p;
 	struct wrr_rq *wrr_rq;
@@ -37,8 +37,9 @@ static struct task_struct *pick_next_task_rt(struct rq *rq)
 
 	wrr_rq = &rq->wrr;
 
-	next = list_entry(wrr_rq->queue, struct sched_wrr_entity, run_list);
-	p = wrr_task_of(wrr_se);
+	next = list_entry(wrr_rq->queue.next, 
+			  struct sched_wrr_entity, run_list);
+	p = wrr_task_of(next);
 	
 	return p;
 }
@@ -46,7 +47,7 @@ static struct task_struct *pick_next_task_rt(struct rq *rq)
 static void dequeue_task_wrr(struct rq *rq, struct task_struct *p, int flags)
 {
 	struct sched_wrr_entity *wrr_se = &p->wrr;	
-	struct wrr_rq *wrr_rq = rq->wrr;
+	struct wrr_rq *wrr_rq = &rq->wrr;
 
 	if (wrr_se == NULL) 
 		return;
@@ -60,15 +61,15 @@ static void
 enqueue_task_wrr(struct rq *rq, struct task_struct *p, int flags)
 {
 	struct sched_wrr_entity *wrr_se = &p->wrr;
-	struct wrr_rq *wrr_rq = rq->wrr;
+	struct wrr_rq *wrr_rq = &rq->wrr;
 	
 	if (wrr_se == NULL) 
 		return;
 
 	if (flags & ENQUEUE_HEAD)
-		list_add(&wrr_se->run_list, wrr_rp->queue);
+		list_add(&wrr_se->run_list, &wrr_rq->queue);
 	else
-		list_add_tail(&wrr_se->run_list, wrr_rq->queue);
+		list_add_tail(&wrr_se->run_list, &wrr_rq->queue);
 	wrr_rq->wrr_nr_running++;
 	inc_nr_running(rq);
 }
@@ -76,10 +77,12 @@ enqueue_task_wrr(struct rq *rq, struct task_struct *p, int flags)
 static void requeue_task_wrr(struct rq *rq, struct task_struct *p, int head)
 {
 	struct sched_wrr_entity *wrr_se = &p->wrr;
-	struct wrr_rq *wrr_rq = rq->wrr_rq;
+	struct wrr_rq *wrr_rq = &rq->wrr;
 	
-	for_each_sched_wrr_entity(wrr_se) 
-		list_move_tail(&wrr_se->run_list, wrr_rq->queue);
+	if (wrr_se == NULL) 
+		return;
+	
+	list_move_tail(&wrr_se->run_list, &wrr_rq->queue);
 }
 
 static void task_tick_wrr(struct rq *rq, struct task_struct *p, int queued)
