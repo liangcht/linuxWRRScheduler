@@ -42,6 +42,10 @@ static struct task_struct *pick_next_task_wrr(struct rq *rq)
 	struct sched_wrr_entity *next = NULL;
 
 	wrr_rq = &rq->wrr;
+	
+	if (list_empty(&wrr_rq->queue)) {
+		return NULL;
+	}
 
 	next = list_entry(wrr_rq->queue.next, 
 			  struct sched_wrr_entity, run_list);
