@@ -1,6 +1,12 @@
 #include "sched.h"
 
 #include <linux/slab.h>
+
+void init_wrr_rq(struct wrr_rq *wrr_rq) {
+	INIT_LIST_HEAD(&wrr_rq->queue);
+	wrr_rq->wrr_nr_running = 0;
+
+} 
 static void switched_to_wrr(struct rq *rq, struct task_struct *p)
 {
 	/* Do nothing */
