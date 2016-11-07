@@ -157,7 +157,7 @@ enqueue_task_wrr(struct rq *rq, struct task_struct *p, int flags)
 	int cpu;	
 	if (wrr_se == NULL) 
 		return;
-
+	printk("######################### enqueue_task_wrr is called, pid = %d\n", p->pid);
 	if (flags & ENQUEUE_HEAD)
 		list_add(&wrr_se->run_list, &wrr_rq->queue);
 	else
