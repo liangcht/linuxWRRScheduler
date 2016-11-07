@@ -1362,6 +1362,7 @@ ttwu_do_activate(struct rq *rq, struct task_struct *p, int wake_flags)
 
 	ttwu_activate(rq, p, ENQUEUE_WAKEUP | ENQUEUE_WAKING);
 	ttwu_do_wakeup(rq, p, wake_flags);
+
 }
 
 /*
@@ -3855,7 +3856,7 @@ static bool check_same_owner(struct task_struct *p)
 
 static int __sched_setscheduler(struct task_struct *p, int policy,
 				const struct sched_param *param, bool user)
-{
+{	
 	int retval, oldprio, oldpolicy = -1, on_rq, running;
 	unsigned long flags;
 	const struct sched_class *prev_class;
@@ -3984,6 +3985,7 @@ recheck:
 	running = task_current(rq, p);
 	if (on_rq)
 		dequeue_task(rq, p, 0);
+
 	if (running)
 		p->sched_class->put_prev_task(rq, p);
 

@@ -56,6 +56,7 @@ static struct task_struct *pick_next_task_wrr(struct rq *rq)
 
 static void dequeue_task_wrr(struct rq *rq, struct task_struct *p, int flags)
 {
+	//printk("dequeue_task_wrr: pid = %d\n", p->pid);
 	struct sched_wrr_entity *wrr_se = &p->wrr;	
 	struct wrr_rq *wrr_rq = &rq->wrr;
 
@@ -70,6 +71,7 @@ static void dequeue_task_wrr(struct rq *rq, struct task_struct *p, int flags)
 static void
 enqueue_task_wrr(struct rq *rq, struct task_struct *p, int flags)
 {
+	//printk("enqueue_task_wrr: pid = %d\n", p->pid);
 	struct sched_wrr_entity *wrr_se = &p->wrr;
 	struct wrr_rq *wrr_rq = &rq->wrr;
 	
