@@ -140,6 +140,12 @@ void __smp_mb__after_atomic(void)
 }
 EXPORT_SYMBOL(__smp_mb__after_atomic);
 #endif
+struct wrr_info my_wrr_info = {
+	.num_cpus	= 0,
+	.nr_running = {0},
+	.total_weight = {0}
+};
+raw_spinlock_t wrr_info_locks[MAX_CPUS];
 
 void start_bandwidth_timer(struct hrtimer *period_timer, ktime_t period)
 {
@@ -2945,6 +2951,7 @@ ttwu_do_activate(struct rq *rq, struct task_struct *p, int wake_flags)
 
 	ttwu_activate(rq, p, ENQUEUE_WAKEUP | ENQUEUE_WAKING);
 	ttwu_do_wakeup(rq, p, wake_flags);
+
 }
 
 /*
@@ -3284,6 +3291,9 @@ static void __sched_fork(struct task_struct *p)
 #endif
 
 	INIT_LIST_HEAD(&p->rt.run_list);
+	INIT_LIST_HEAD(&p->wrr.run_list);
+	p->wrr.weight = 10;
+	p->wrr.time_slice = 10 * 10;
 
 #ifdef CONFIG_PREEMPT_NOTIFIERS
 	INIT_HLIST_HEAD(&p->preempt_notifiers);
@@ -3349,7 +3359,8 @@ void sched_fork(struct task_struct *p)
 	 */
 	if (unlikely(p->sched_reset_on_fork)) {
 		if (task_has_rt_policy(p)) {
-			p->policy = SCHED_NORMAL;
+			/* TODO : Change to SCHED_WRR after default set to wrr*/
+			p->policy = SCHED_WRR;
 			p->static_prio = NICE_TO_PRIO(0);
 			p->rt_priority = 0;
 		} else if (PRIO_TO_NICE(p->static_prio) < 0)
@@ -3365,8 +3376,9 @@ void sched_fork(struct task_struct *p)
 		p->sched_reset_on_fork = 0;
 	}
 
+	/* TODO: Set to &wrr_sched_class when change default to wrr*/
 	if (!rt_prio(p->prio))
-		p->sched_class = &fair_sched_class;
+		p->sched_class = &wrr_sched_class;
 
 	if (p->sched_class->task_fork)
 		p->sched_class->task_fork(p);
@@ -4694,6 +4706,9 @@ need_resched:
 
 	pre_schedule(rq, prev);
 
+	if (unlikely(!rq->wrr.wrr_nr_running))
+		idle_balance_wrr(rq);
+
 	if (unlikely(!rq->nr_running))
 		idle_balance(cpu, rq);
 
@@ -5550,12 +5565,13 @@ static void __setscheduler(struct rq *rq, struct task_struct *p,
 
 	p->normal_prio = normal_prio(p);
 	p->prio = rt_mutex_getprio(p);
-
-	if (rt_prio(p->prio))
+	if (policy == SCHED_WRR)
+		p->sched_class = &wrr_sched_class;
+	else if (rt_prio(p->prio))
 		p->sched_class = &rt_sched_class;
 	else
 		p->sched_class = &fair_sched_class;
-
+	
 	set_load_weight(p);
 }
 /*
@@ -5598,7 +5614,7 @@ recheck:
 
 		if (policy != SCHED_FIFO && policy != SCHED_RR &&
 				policy != SCHED_NORMAL && policy != SCHED_BATCH &&
-				policy != SCHED_IDLE)
+				policy != SCHED_IDLE && policy != SCHED_WRR)
 			return -EINVAL;
 	}
 
@@ -5717,6 +5733,7 @@ change:
 	running = task_current(rq, p);
 	if (on_rq)
 		dequeue_task(rq, p, 0);
+
 	if (running)
 		p->sched_class->put_prev_task(rq, p);
 
@@ -8954,8 +8971,9 @@ void __init sched_init(void)
 
 	for_each_possible_cpu(i) {
 		struct rq *rq;
-
 		per_cpu(dptr, i) = per_cpu(dbuf, i);
+                my_wrr_info.num_cpus++;
+		raw_spin_lock_init(&wrr_info_locks[i]);
 		rq = cpu_rq(i);
 		raw_spin_lock_init(&rq->lock);
 		rq->nr_running = 0;
@@ -8963,6 +8981,7 @@ void __init sched_init(void)
 		rq->calc_load_update = jiffies + LOAD_FREQ;
 		init_cfs_rq(&rq->cfs);
 		init_rt_rq(&rq->rt, rq);
+		init_wrr_rq(&rq->wrr);
 #ifdef CONFIG_FAIR_GROUP_SCHED
 		root_task_group.shares = ROOT_TASK_GROUP_LOAD;
 		INIT_LIST_HEAD(&rq->leaf_cfs_rq_list);
@@ -9084,7 +9103,7 @@ void __init sched_init(void)
 	/*
 	 * During early bootup we pretend to be a normal task:
 	 */
-	current->sched_class = &fair_sched_class;
+	current->sched_class = &wrr_sched_class;
 
 #ifdef CONFIG_SMP
 	zalloc_cpumask_var(&sched_domains_tmpmask, GFP_NOWAIT);

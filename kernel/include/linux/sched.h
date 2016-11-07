@@ -1118,6 +1118,14 @@ struct sched_entity {
 #endif
 };
 
+struct sched_wrr_entity {
+	struct list_head run_list;
+	int weight;
+	unsigned long timeout;
+	unsigned int time_slice;
+	struct sched_wrr_entity *back;
+};
+
 struct sched_rt_entity {
 	struct list_head run_list;
 	unsigned long timeout;
@@ -1172,6 +1180,7 @@ struct task_struct {
 #ifdef CONFIG_SCHED_HMP
 	struct ravg ravg;
 #endif
+	struct sched_wrr_entity wrr;
 #ifdef CONFIG_CGROUP_SCHED
 	struct task_group *sched_task_group;
 #endif
