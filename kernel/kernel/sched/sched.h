@@ -17,7 +17,7 @@ struct wrr_info {
 	int num_cpus;
 	int nr_running[MAX_CPUS];
 	int total_weights[MAX_CPUS];
-}
+};
 
 /*
  * Convert user-nice values [ -20 ... 0 ... 19 ]

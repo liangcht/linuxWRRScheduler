@@ -1,62 +1,13 @@
 #include "sched.h"
 
 #include <linux/slab.h>
-
-static int
-select_task_rq_wrr(struct task_struct *p, int sd_flag, int flags)
-{
-	struct task_struct *curr;
-	struct rq *rq;
-	int cpu;
-
-	cpu = task_cpu(p);
-
-	if (p->nr_cpus_allowed == 1)
-		goto out;
-
-	/* For anything but wake ups, just return the task_cpu */
-	if (sd_flag != SD_BALANCE_WAKE && sd_flag != SD_BALANCE_FORK)
-		goto out;
-
-	rq = cpu_rq(cpu);
-
-	rcu_read_lock();
-	curr = ACCESS_ONCE(rq->curr); /* unlocked access */
-
-	/*
-	 * If the current task on @p's runqueue is an RT task, then
-	 * try to see if we can wake this RT task up on another
-	 * runqueue. Otherwise simply start this RT task
-	 * on its current runqueue.
-	 *
-	 * We want to avoid overloading runqueues. If the woken
-	 * task is a higher priority, then it will stay on this CPU
-	 * and the lower prio task should be moved to another CPU.
-	 * Even though this will probably make the lower prio task
-	 * lose its cache, we do not want to bounce a higher task
-	 * around just because it gave up its CPU, perhaps for a
-	 * lock?
-	 *
-	 * For equal prio tasks, we just let the scheduler sort it out.
-	 *
-	 * Otherwise, just let it ride on the affined RQ and the
-	 * post-schedule router will push the preempted task away
-	 *
-	 * This test is optimistic, if we get it wrong the load-balancer
-	 * will have to sort it out.
-	 */
-	if (curr && unlikely(rt_task(curr)) &&
-	    (curr->nr_cpus_allowed < 2 ||
-	     curr->prio <= p->prio) &&
-	    (p->nr_cpus_allowed > 1)) {
-		int target = find_lowest_rq(p);
-
-		if (target != -1)
 void init_wrr_rq(struct wrr_rq *wrr_rq) {
 	INIT_LIST_HEAD(&wrr_rq->queue);
 	wrr_rq->wrr_nr_running = 0;
 
-} 
+}
+
+
 static void switched_to_wrr(struct rq *rq, struct task_struct *p)
 {
 	/* Do nothing */
@@ -100,7 +51,7 @@ static struct task_struct *pick_next_task_wrr(struct rq *rq)
 	next = list_entry(wrr_rq->queue.next, 
 			  struct sched_wrr_entity, run_list);
 	p = wrr_task_of(next);
-	
+	//printk("wrr_pick_next_task pid = %d total_running = %d\n", p->pid, wrr_rq->wrr_nr_running);
 	return p;
 }
 
@@ -147,6 +98,11 @@ static void requeue_task_wrr(struct rq *rq, struct task_struct *p, int head)
 	list_move_tail(&wrr_se->run_list, &wrr_rq->queue);
 }
 
+static void yield_task_wrr(struct rq *rq)
+{
+	requeue_task_wrr(rq, rq->curr, 0);
+}
+
 static void task_tick_wrr(struct rq *rq, struct task_struct *p, int queued)
 {
 	struct sched_wrr_entity *wrr_se = &p->wrr;
@@ -181,7 +137,8 @@ const struct sched_class wrr_sched_class = {
 
 	.pick_next_task		= pick_next_task_wrr,
 	.put_prev_task		= put_prev_task_wrr,
-
+	.yield_task		= yield_task_wrr,
+/*
 #ifdef CONFIG_SMP
 	.select_task_rq		= select_task_rq_rt,
 
@@ -193,7 +150,7 @@ const struct sched_class wrr_sched_class = {
 	.task_woken		= task_woken_rt,
 	.switched_from		= switched_from_rt,
 #endif
-
+*/
 	.set_curr_task          = set_curr_task_wrr,
 	.task_tick		= task_tick_wrr,
 
