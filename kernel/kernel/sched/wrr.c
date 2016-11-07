@@ -60,22 +60,26 @@ static void dequeue_task_wrr(struct rq *rq, struct task_struct *p, int flags)
 	//printk("dequeue_task_wrr: pid = %d\n", p->pid);
 	struct sched_wrr_entity *wrr_se = &p->wrr;	
 	struct wrr_rq *wrr_rq = &rq->wrr;
-
+	int cpu;
 	if (wrr_se == NULL) 
 		return;
 
 	list_del_init(&wrr_se->run_list);	
 	wrr_rq->wrr_nr_running--;
 	dec_nr_running(rq);
+	cpu = cpu_of(rq);
+	raw_spin_lock(&wrr_info_locks[cpu]);
+	my_wrr_info.nr_running[cpu]--;
+	my_wrr_info.total_weight[cpu] -= wrr_se->weight;
+	raw_spin_unlock(&wrr_info_locks[cpu]);
 }
 
 static void
 enqueue_task_wrr(struct rq *rq, struct task_struct *p, int flags)
 {
-	//printk("enqueue_task_wrr: pid = %d\n", p->pid);
 	struct sched_wrr_entity *wrr_se = &p->wrr;
 	struct wrr_rq *wrr_rq = &rq->wrr;
-	
+	int cpu;	
 	if (wrr_se == NULL) 
 		return;
 
@@ -85,6 +89,11 @@ enqueue_task_wrr(struct rq *rq, struct task_struct *p, int flags)
 		list_add_tail(&wrr_se->run_list, &wrr_rq->queue);
 	wrr_rq->wrr_nr_running++;
 	inc_nr_running(rq);
+	cpu = cpu_of(rq);
+	raw_spin_lock(&wrr_info_locks[cpu]);
+	my_wrr_info.nr_running[cpu]++;
+	my_wrr_info.total_weight[cpu] += wrr_se->weight;
+	raw_spin_unlock(&wrr_info_locks[cpu]);
 }
 
 static void requeue_task_wrr(struct rq *rq, struct task_struct *p, int head)
@@ -106,15 +115,19 @@ static void yield_task_wrr(struct rq *rq)
 static void task_tick_wrr(struct rq *rq, struct task_struct *p, int queued)
 {
 	struct sched_wrr_entity *wrr_se = &p->wrr;
-
+	int cpu = cpu_of(rq);
 	if (wrr_se == NULL) 
 		return;
 
 	if (--p->wrr.time_slice)
 		return;
 	
-	if (wrr_se->weight > 1)
+	if (wrr_se->weight > 1) {
 		wrr_se->weight--;
+		raw_spin_lock(&wrr_info_locks[cpu]);
+		my_wrr_info.total_weight[cpu]--;
+		raw_spin_unlock(&wrr_info_locks[cpu]);
+	}
 	wrr_se->time_slice = wrr_se->weight * 10;
 
 	if (wrr_se->run_list.prev != wrr_se->run_list.next) {
@@ -138,7 +151,7 @@ const struct sched_class wrr_sched_class = {
 	.pick_next_task		= pick_next_task_wrr,
 	.put_prev_task		= put_prev_task_wrr,
 	.yield_task		= yield_task_wrr,
-/*
+
 #ifdef CONFIG_SMP
 	.select_task_rq		= select_task_rq_rt,
 
@@ -150,7 +163,7 @@ const struct sched_class wrr_sched_class = {
 	.task_woken		= task_woken_rt,
 	.switched_from		= switched_from_rt,
 #endif
-*/
+
 	.set_curr_task          = set_curr_task_wrr,
 	.task_tick		= task_tick_wrr,
 

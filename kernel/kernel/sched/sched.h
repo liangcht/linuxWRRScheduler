@@ -16,9 +16,10 @@ extern __read_mostly int scheduler_running;
 struct wrr_info {
 	int num_cpus;
 	int nr_running[MAX_CPUS];
-	int total_weights[MAX_CPUS];
+	int total_weight[MAX_CPUS];
 };
-
+extern struct wrr_info my_wrr_info;
+extern raw_spinlock_t wrr_info_locks[MAX_CPUS];
 /*
  * Convert user-nice values [ -20 ... 0 ... 19 ]
  * to static priority [ MAX_RT_PRIO..MAX_PRIO-1 ],

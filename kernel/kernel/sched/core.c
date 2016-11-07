@@ -89,6 +89,12 @@
 #define CREATE_TRACE_POINTS
 #include <trace/events/sched.h>
 
+struct wrr_info my_wrr_info = {
+	.num_cpus	= 0,
+	.nr_running = {0},
+	.total_weight = {0}
+};
+
 void start_bandwidth_timer(struct hrtimer *period_timer, ktime_t period)
 {
 	unsigned long delta;
@@ -6980,7 +6986,8 @@ void __init sched_init(void)
 
 	for_each_possible_cpu(i) {
 		struct rq *rq;
-
+                my_wrr_info.num_cpus++;
+		raw_spin_lock_init(&wrr_info_locks[i]);
 		rq = cpu_rq(i);
 		raw_spin_lock_init(&rq->lock);
 		rq->nr_running = 0;
