@@ -59,69 +59,36 @@ skip:
 
 	return ret;
 }
+
+static int
+select_task_rq_wrr(struct task_struct *p, int sd_flag, int flags)
+{
+	int cpu;
+	int min_cpu = task_cpu(p);
+	int min_weight = INT_MAX;
+
+	if (p->nr_cpus_allowed == 1)
+		goto out;
+
+	/* For anything but wake ups, just return the task_cpu */
+	if (sd_flag != SD_BALANCE_WAKE && sd_flag != SD_BALANCE_FORK)
+		goto out;
+
+	for_each_possible_cpu(cpu) {
+		if (my_wrr_info.total_weight[cpu] < min_weight) {
+			min_weight = my_wrr_info.total_weight[cpu];
+			min_cpu = cpu;
+		}
+	}
+	return min_cpu;
+out:
+	return min_cpu;
+}
 #endif
 
 void init_wrr_rq(struct wrr_rq *wrr_rq) {
 	INIT_LIST_HEAD(&wrr_rq->queue);
 	wrr_rq->wrr_nr_running = 0;
-
-}
-static int
-select_task_rq_wrr(struct task_struct *p, int sd_flag, int flags)
-{
-//	struct task_struct *curr;
-//	struct rq *rq;
-//	int cpu;
-//
-//	cpu = task_cpu(p);
-//
-//	if (p->nr_cpus_allowed == 1)
-//		goto out;
-//
-//	/* For anything but wake ups, just return the task_cpu */
-//	if (sd_flag != SD_BALANCE_WAKE && sd_flag != SD_BALANCE_FORK)
-//		goto out;
-//
-//	rq = cpu_rq(cpu);
-//
-//	rcu_read_lock();
-//	curr = ACCESS_ONCE(rq->curr); /* unlocked access */
-//
-//	/*
-//	 * If the current task on @p's runqueue is an RT task, then
-//	 * try to see if we can wake this RT task up on another
-//	 * runqueue. Otherwise simply start this RT task
-//	 * on its current runqueue.
-//	 *
-//	 * We want to avoid overloading runqueues. If the woken
-//	 * task is a higher priority, then it will stay on this CPU
-//	 * and the lower prio task should be moved to another CPU.
-//	 * Even though this will probably make the lower prio task
-//	 * lose its cache, we do not want to bounce a higher task
-//	 * around just because it gave up its CPU, perhaps for a
-//	 * lock?
-//	 *
-//	 * For equal prio tasks, we just let the scheduler sort it out.
-//	 *
-//	 * Otherwise, just let it ride on the affined RQ and the
-//	 * post-schedule router will push the preempted task away
-//	 *
-//	 * This test is optimistic, if we get it wrong the load-balancer
-//	 * will have to sort it out.
-//	 */
-//	if (curr && unlikely(rt_task(curr)) &&
-//	    (curr->nr_cpus_allowed < 2 ||
-//	     curr->prio <= p->prio) &&
-//	    (p->nr_cpus_allowed > 1)) {
-//		int target = find_lowest_rq(p);
-//
-//		if (target != -1)
-//			cpu = target;
-//	}
-//	rcu_read_unlock();
-//
-//out:
-//	return cpu;
 
 }
 static void switched_to_wrr(struct rq *rq, struct task_struct *p)
@@ -264,9 +231,8 @@ const struct sched_class wrr_sched_class = {
 	.yield_task		= yield_task_wrr,
 
 #ifdef CONFIG_SMP
-	/*
-	.select_task_rq		= select_task_rq_rt,
-
+	.select_task_rq		= select_task_rq_wrr,
+/*
 	.set_cpus_allowed       = set_cpus_allowed_rt,
 	.rq_online              = rq_online_rt,
 	.rq_offline             = rq_offline_rt,
@@ -274,7 +240,7 @@ const struct sched_class wrr_sched_class = {
 	.post_schedule		= post_schedule_rt,
 	.task_woken		= task_woken_rt,
 	.switched_from		= switched_from_rt,
-	*/
+*/
 #endif
 
 	.set_curr_task          = set_curr_task_wrr,
