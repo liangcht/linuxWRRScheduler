@@ -16,7 +16,7 @@ task_struct *pick_pullable_task_wrr(struct rq *src_rq)
 		return p;	
 	} 
 	
-	wrr_se = list_entry(&src_rq->wrr.queue.prev, 
+	wrr_se = list_entry(src_rq->wrr.queue.prev, 
 			    struct sched_wrr_entity, run_list);
 	if (wrr_se) {
 		p = wrr_task_of(wrr_se);
