@@ -1,13 +1,129 @@
 #include "sched.h"
 
 #include <linux/slab.h>
+static inline struct task_struct *wrr_task_of(struct sched_wrr_entity *wrr_se)
+{
+	return container_of(wrr_se, struct task_struct, wrr);
+}
+#ifdef CONFIG_SMP
+static struct 
+task_struct *pick_pullable_task_wrr(struct rq *src_rq) 
+{
+	struct task_struct *p = NULL;
+	struct sched_wrr_entity *wrr_se;
+
+	if (list.empty()) {
+		return p;	
+	} 
+	
+	wrr_se = list_last_entry(&src_rq->wrr->queue, 
+				 struct sched_wrr_entity, run_list);
+	if (wrr_se) {
+		p = wrr_task_of(wrr_se);
+	}
+
+	return p;
+}
+
+void idle_balance_wrr(struct rq *this_rq)
+{
+	int this_cpu = this_rq->cpu, ret = 0, cpu;
+	struct task_struct *p;
+	struct rq *src_rq;
+	
+	for_each_possible_cpu(cpu) {
+		if (this_cpu == cpu)
+			continue;
+
+		src_rq = cpu_rq(cpu);
+		double_lock_balance(this_rq, src_rq);
+
+		if (src_rq->wrr.wrr_nr_running <= 1)
+			goto skip;
+	
+		p = pick_pullable_task_wrr(src_rq);
+		
+		if (p) {
+			WARN_ON(p == src_rq->curr);
+			WARN_ON(!p->on_rq);
+
+			ret = 1;
+
+			deactivate_task(src_rq, p, 0);
+			set_task_cpu(p, this_cpu);
+			activate_task(this_rq, p, 0);
+		}
+skip:
+		double_unlock_balance(this_rq, src_rq);
+	}
+
+	return ret;
+}
+#endif
+
 void init_wrr_rq(struct wrr_rq *wrr_rq) {
 	INIT_LIST_HEAD(&wrr_rq->queue);
 	wrr_rq->wrr_nr_running = 0;
 
 }
+static int
+select_task_rq_wrr(struct task_struct *p, int sd_flag, int flags)
+{
+//	struct task_struct *curr;
+//	struct rq *rq;
+//	int cpu;
+//
+//	cpu = task_cpu(p);
+//
+//	if (p->nr_cpus_allowed == 1)
+//		goto out;
+//
+//	/* For anything but wake ups, just return the task_cpu */
+//	if (sd_flag != SD_BALANCE_WAKE && sd_flag != SD_BALANCE_FORK)
+//		goto out;
+//
+//	rq = cpu_rq(cpu);
+//
+//	rcu_read_lock();
+//	curr = ACCESS_ONCE(rq->curr); /* unlocked access */
+//
+//	/*
+//	 * If the current task on @p's runqueue is an RT task, then
+//	 * try to see if we can wake this RT task up on another
+//	 * runqueue. Otherwise simply start this RT task
+//	 * on its current runqueue.
+//	 *
+//	 * We want to avoid overloading runqueues. If the woken
+//	 * task is a higher priority, then it will stay on this CPU
+//	 * and the lower prio task should be moved to another CPU.
+//	 * Even though this will probably make the lower prio task
+//	 * lose its cache, we do not want to bounce a higher task
+//	 * around just because it gave up its CPU, perhaps for a
+//	 * lock?
+//	 *
+//	 * For equal prio tasks, we just let the scheduler sort it out.
+//	 *
+//	 * Otherwise, just let it ride on the affined RQ and the
+//	 * post-schedule router will push the preempted task away
+//	 *
+//	 * This test is optimistic, if we get it wrong the load-balancer
+//	 * will have to sort it out.
+//	 */
+//	if (curr && unlikely(rt_task(curr)) &&
+//	    (curr->nr_cpus_allowed < 2 ||
+//	     curr->prio <= p->prio) &&
+//	    (p->nr_cpus_allowed > 1)) {
+//		int target = find_lowest_rq(p);
+//
+//		if (target != -1)
+//			cpu = target;
+//	}
+//	rcu_read_unlock();
+//
+//out:
+//	return cpu;
 
-
+}
 static void switched_to_wrr(struct rq *rq, struct task_struct *p)
 {
 	/* Do nothing */
@@ -29,11 +145,6 @@ check_preempt_curr_wrr(struct rq *rq, struct task_struct *p, int flags)
 	/* Since there is no priority in wrr scheduler, we don't have to 
 	 * schedule the new task and preempt the exsiting one.
 	 */
-}
-
-static inline struct task_struct *wrr_task_of(struct sched_wrr_entity *wrr_se)
-{
-	return container_of(wrr_se, struct task_struct, wrr);
 }
 
 static struct task_struct *pick_next_task_wrr(struct rq *rq)
@@ -153,6 +264,7 @@ const struct sched_class wrr_sched_class = {
 	.yield_task		= yield_task_wrr,
 
 #ifdef CONFIG_SMP
+	/*
 	.select_task_rq		= select_task_rq_rt,
 
 	.set_cpus_allowed       = set_cpus_allowed_rt,
@@ -162,6 +274,7 @@ const struct sched_class wrr_sched_class = {
 	.post_schedule		= post_schedule_rt,
 	.task_woken		= task_woken_rt,
 	.switched_from		= switched_from_rt,
+	*/
 #endif
 
 	.set_curr_task          = set_curr_task_wrr,
