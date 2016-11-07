@@ -15,13 +15,11 @@ task_struct *pick_pullable_task_wrr(struct rq *src_rq, int this_cpu)
 		return p;	
 	} 
 	
-	pos = list_entry(src_rq->wrr.queue.next, 
-			  struct sched_wrr_entity, run_list);
-	list_for_each_entry_continue(pos, &src_rq->wrr.queue, run_list) {
-		p = wrr_task_of(pos);
-		if (cpumask_test_cpu(this_cpu, &p->cpus_allowed))
-			return p;
-	}
+	pos = list_entry(src_rq->wrr.queue.prev, struct sched_wrr_entity, run_list);
+	//list_for_each_entry_continue(pos, &src_rq->wrr.queue, run_list) {
+	p = wrr_task_of(pos);
+	if (cpumask_test_cpu(this_cpu, &p->cpus_allowed))
+		return p;
 	return NULL;
 }
 
@@ -44,13 +42,15 @@ void idle_balance_wrr(struct rq *this_rq)
 		p = pick_pullable_task_wrr(src_rq, this_cpu);
 		
 		if (p) {
-			WARN_ON(p == src_rq->curr);
+			if (p == src_rq->curr)
+				goto skip;
 			WARN_ON(!p->on_rq);
 
 			deactivate_task(src_rq, p, 0);
 			set_task_cpu(p, this_cpu);
 			activate_task(this_rq, p, 0);
-			goto skip;
+			double_unlock_balance(this_rq, src_rq);
+			return;
 		}
 skip:
 		double_unlock_balance(this_rq, src_rq);
@@ -157,7 +157,6 @@ enqueue_task_wrr(struct rq *rq, struct task_struct *p, int flags)
 	int cpu;	
 	if (wrr_se == NULL) 
 		return;
-	printk("######################### enqueue_task_wrr is called, pid = %d\n", p->pid);
 	if (flags & ENQUEUE_HEAD)
 		list_add(&wrr_se->run_list, &wrr_rq->queue);
 	else
