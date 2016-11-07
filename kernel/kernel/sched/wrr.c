@@ -12,12 +12,12 @@ task_struct *pick_pullable_task_wrr(struct rq *src_rq)
 	struct task_struct *p = NULL;
 	struct sched_wrr_entity *wrr_se;
 
-	if (list.empty()) {
+	if (list_empty(&src_rq->wrr.queue)) {
 		return p;	
 	} 
 	
-	wrr_se = list_last_entry(&src_rq->wrr->queue, 
-				 struct sched_wrr_entity, run_list);
+	wrr_se = list_entry(&src_rq->wrr.queue.prev, 
+			    struct sched_wrr_entity, run_list);
 	if (wrr_se) {
 		p = wrr_task_of(wrr_se);
 	}
@@ -27,7 +27,7 @@ task_struct *pick_pullable_task_wrr(struct rq *src_rq)
 
 void idle_balance_wrr(struct rq *this_rq)
 {
-	int this_cpu = this_rq->cpu, ret = 0, cpu;
+	int this_cpu = this_rq->cpu, cpu;
 	struct task_struct *p;
 	struct rq *src_rq;
 	
@@ -47,8 +47,6 @@ void idle_balance_wrr(struct rq *this_rq)
 			WARN_ON(p == src_rq->curr);
 			WARN_ON(!p->on_rq);
 
-			ret = 1;
-
 			deactivate_task(src_rq, p, 0);
 			set_task_cpu(p, this_cpu);
 			activate_task(this_rq, p, 0);
@@ -56,8 +54,6 @@ void idle_balance_wrr(struct rq *this_rq)
 skip:
 		double_unlock_balance(this_rq, src_rq);
 	}
-
-	return ret;
 }
 
 static int
@@ -232,15 +228,17 @@ const struct sched_class wrr_sched_class = {
 
 #ifdef CONFIG_SMP
 	.select_task_rq		= select_task_rq_wrr,
-/*
-	.set_cpus_allowed       = set_cpus_allowed_rt,
-	.rq_online              = rq_online_rt,
-	.rq_offline             = rq_offline_rt,
-	.pre_schedule		= pre_schedule_rt,
-	.post_schedule		= post_schedule_rt,
-	.task_woken		= task_woken_rt,
-	.switched_from		= switched_from_rt,
-*/
+
+	//.set_cpus_allowed       = set_cpus_allowed_wrr,
+
+	//.rq_online              = rq_online_rt,
+	//.rq_offline             = rq_offline_rt,
+
+	//.pre_schedule		= pre_schedule_rt,
+	//.post_schedule		= post_schedule_rt,
+	//.task_woken		= task_woken_rt,
+	//.switched_from		= switched_from_rt,
+
 #endif
 
 	.set_curr_task          = set_curr_task_wrr,

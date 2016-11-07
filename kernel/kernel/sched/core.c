@@ -94,6 +94,7 @@ struct wrr_info my_wrr_info = {
 	.nr_running = {0},
 	.total_weight = {0}
 };
+raw_spinlock_t wrr_info_locks[MAX_CPUS];
 
 void start_bandwidth_timer(struct hrtimer *period_timer, ktime_t period)
 {
