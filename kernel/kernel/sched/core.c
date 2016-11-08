@@ -3340,7 +3340,11 @@ void sched_fork(struct task_struct *p)
 {
 	unsigned long flags;
 	int cpu = get_cpu();
-
+	if (p->cred->uid >= 10000) {
+		p->wrr.weight = 10;
+		p->wrr.time_slice = p->wrr.weight * 10;
+	}
+		
 	__sched_fork(p);
 	/*
 	 * We mark the process as running here. This guarantees that
