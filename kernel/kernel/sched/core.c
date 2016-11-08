@@ -143,13 +143,20 @@ EXPORT_SYMBOL(__smp_mb__after_atomic);
 struct wrr_info my_wrr_info = {
 	.num_cpus	= 0,
 	.nr_running = {0},
-	.total_weight = {0}
+	.total_weight = {0},
+	.per_cpu_nr_running = {0}
 };
 raw_spinlock_t wrr_info_locks[MAX_CPUS];
 
 SYSCALL_DEFINE1(get_wrr_info, struct wrr_info __user *, wrr_info)
 {
 	long retval;
+	int cpu;
+	struct rq *rq;
+	for_each_possible_cpu(cpu) {
+		rq = cpu_rq(cpu);
+		my_wrr_info.per_cpu_nr_running[cpu] = rq->nr_running;
+	}
 	retval = copy_to_user(wrr_info, &my_wrr_info, sizeof(my_wrr_info)) 
 		? -EFAULT : my_wrr_info.num_cpus;
 	return retval;

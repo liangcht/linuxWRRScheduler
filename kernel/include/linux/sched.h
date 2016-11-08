@@ -12,6 +12,7 @@ struct wrr_info {
 	int num_cpus;
 	int nr_running[MAX_CPUS];
 	int total_weight[MAX_CPUS];
+	int per_cpu_nr_running[MAX_CPUS];
 };
 #include <asm/param.h>	/* for HZ */
 
