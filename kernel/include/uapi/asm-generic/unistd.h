@@ -660,7 +660,11 @@ __SC_COMP(__NR_recvmmsg, sys_recvmmsg, compat_sys_recvmmsg)
  * Architectures may provide up to 16 syscalls of their own
  * starting with this value.
  */
-#define __NR_arch_specific_syscall 244
+#define __NR_get_wrr_info 244
+__SYSCALL(__NR_get_wrr_info, sys_get_wrr_info)
+
+#define __NR_set_wrr_weight 245
+__SYSCALL(__NR_set_wrr_weight, sys_set_wrr_weight)
 
 #define __NR_wait4 260
 __SC_COMP(__NR_wait4, sys_wait4, compat_sys_wait4)

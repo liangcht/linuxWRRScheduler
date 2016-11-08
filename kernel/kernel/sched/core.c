@@ -147,6 +147,18 @@ struct wrr_info my_wrr_info = {
 };
 raw_spinlock_t wrr_info_locks[MAX_CPUS];
 
+SYSCALL_DEFINE1(get_wrr_info, struct wrr_info __user *, wrr_info)
+{
+	long retval;
+	retval = copy_to_user(wrr_info, &my_wrr_info, sizeof(my_wrr_info)) 
+		? -EFAULT : my_wrr_info.num_cpus;
+	return retval;
+}
+
+SYSCALL_DEFINE1(set_wrr_weight, int, boosted_weight)
+{
+	return 0;
+}
 void start_bandwidth_timer(struct hrtimer *period_timer, ktime_t period)
 {
 	unsigned long delta;

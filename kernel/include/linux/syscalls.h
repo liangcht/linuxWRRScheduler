@@ -207,6 +207,9 @@ asmlinkage long sys_adjtimex(struct timex __user *txc_p);
 
 asmlinkage long sys_times(struct tms __user *tbuf);
 
+asmlinkage long sys_get_wrr_info(struct wrr_info __user *wrr_info);
+asmlinkage long sys_set_wrr_weight(int boosted_weight);
+
 asmlinkage long sys_gettid(void);
 asmlinkage long sys_nanosleep(struct timespec __user *rqtp, struct timespec __user *rmtp);
 asmlinkage long sys_alarm(unsigned int seconds);
