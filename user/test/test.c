@@ -51,8 +51,8 @@ void check_wrr_info() {
 int main(void)
 {
 	
-	int n = 1000;
-	pid_t pid[1000];
+	int n = 30;
+	pid_t pid[30];
 	int i;
 
 	setuid(10001);
