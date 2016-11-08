@@ -50,9 +50,9 @@ void check_wrr_info() {
 
 int main(void)
 {
-	/*
-	int n = 10;
-	pid_t pid[10];
+	
+	int n = 1000;
+	pid_t pid[1000];
 	int i;
 
 	setuid(10001);
@@ -70,10 +70,10 @@ int main(void)
 	}	
 
 	
-	struct sched_param param;
+	//struct sched_param param;
 	//pid_t child_pid;
-	param.sched_priority = 50;
-
+	//param.sched_priority = 50;
+	/*
 	struct sched_param param_child;
 	param_child.sched_priority = 0;
 	if (sched_setscheduler(getpid(), 6, &param) == -1) {
@@ -98,15 +98,15 @@ int main(void)
 		wait(&status);	
 	}
 	*/
-//	sched_setscheduler(getpid(), SCHED_RR, &param);
+	//sched_setscheduler(getpid(), SCHED_RR, &param);
 	check_wrr_info();
 	
-//	int status;
-//	pid_t w_pid;
-//	while (1) {
-//		w_pid = wait(&status);
-//		if (w_pid < 0 && errno == ECHILD)
-//			break;
-//	}
+	int status;
+	pid_t w_pid;
+	while (1) {
+		w_pid = wait(&status);
+		if (w_pid < 0 && errno == ECHILD)
+			break;
+	}
 	return 0;
 }

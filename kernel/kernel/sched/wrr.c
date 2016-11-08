@@ -213,6 +213,15 @@ static void task_tick_wrr(struct rq *rq, struct task_struct *p, int queued)
 	}
 }
 
+static bool yield_to_task_wrr(struct rq *rq, struct task_struct *p, bool preempt)
+{
+	return true;
+}
+
+static void
+prio_changed_wrr(struct rq *rq, struct task_struct *p, int oldprio)
+{
+}
 /*
  * Update the current task's runtime statistics. Skip current tasks that
  * are not in our scheduling class.
@@ -227,10 +236,11 @@ const struct sched_class wrr_sched_class = {
 	.pick_next_task		= pick_next_task_wrr,
 	.put_prev_task		= put_prev_task_wrr,
 	.yield_task		= yield_task_wrr,
+	.yield_to_task		= yield_to_task_wrr,
 
 #ifdef CONFIG_SMP
 	.select_task_rq		= select_task_rq_wrr,
-
+	.prio_changed		= prio_changed_wrr,
 	//.set_cpus_allowed       = set_cpus_allowed_wrr,
 
 	//.rq_online              = rq_online_rt,

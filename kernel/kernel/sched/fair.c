@@ -4242,7 +4242,7 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
 	struct cfs_rq *cfs_rq;
 	struct sched_entity *se = &p->se;
 	/*SLOAN-DEV*/
-	printk("####################################CFS PROCESS %s\n", p->comm);
+	printk("####################################CFS PROCESS %d\n", p->pid);
 	for_each_sched_entity(se) {
 		if (se->on_rq)
 			break;

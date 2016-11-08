@@ -21,7 +21,8 @@
 #define GAUGECOUNT	1500
 
 /* default scheduling policy SCHED_OTHER */
-#define SCHEDULER	SCHED_OTHER
+/* Linux Tsai */
+#define SCHEDULER	SCHED_WRR
 
 #define PRIORITY_DEFAULT 0
 #define PRIORITY_HIGH	 sched_get_priority_max(SCHEDULER)

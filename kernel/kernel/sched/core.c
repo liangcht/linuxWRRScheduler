@@ -4623,11 +4623,13 @@ pick_next_task(struct rq *rq)
 	 * Optimization: we know that if all tasks are in
 	 * the fair class we can call that function directly:
 	 */
+	/*
 	if (likely(rq->nr_running == rq->cfs.h_nr_running)) {
 		p = fair_sched_class.pick_next_task(rq);
 		if (likely(p))
 			return p;
 	}
+	*/
 
 	for_each_class(class) {
 		p = class->pick_next_task(rq);
@@ -5388,7 +5390,8 @@ void rt_mutex_setprio(struct task_struct *p, int prio)
 	if (rt_prio(prio))
 		p->sched_class = &rt_sched_class;
 	else
-		p->sched_class = &fair_sched_class;
+		/* God of linux touched here */
+		p->sched_class = &wrr_sched_class;
 
 	p->prio = prio;
 
@@ -5592,6 +5595,7 @@ static void __setscheduler(struct rq *rq, struct task_struct *p,
 
 	p->normal_prio = normal_prio(p);
 	p->prio = rt_mutex_getprio(p);
+	
 	if (policy == SCHED_WRR)
 		p->sched_class = &wrr_sched_class;
 	else if (rt_prio(p->prio))
@@ -6539,6 +6543,7 @@ SYSCALL_DEFINE1(sched_get_priority_max, int, policy)
 		ret = MAX_USER_RT_PRIO-1;
 		break;
 	case SCHED_NORMAL:
+	case SCHED_WRR:
 	case SCHED_BATCH:
 	case SCHED_IDLE:
 		ret = 0;
@@ -6564,6 +6569,7 @@ SYSCALL_DEFINE1(sched_get_priority_min, int, policy)
 		ret = 1;
 		break;
 	case SCHED_NORMAL:
+	case SCHED_WRR:
 	case SCHED_BATCH:
 	case SCHED_IDLE:
 		ret = 0;
@@ -9196,7 +9202,7 @@ static void normalize_task(struct rq *rq, struct task_struct *p)
 {
 	const struct sched_class *prev_class = p->sched_class;
 	struct sched_attr attr = {
-		.sched_policy = SCHED_NORMAL,
+		.sched_policy = SCHED_WRR,
 	};
 	int old_prio = p->prio;
 	int on_rq;
