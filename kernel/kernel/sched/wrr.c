@@ -7,22 +7,22 @@ static inline struct task_struct *wrr_task_of(struct sched_wrr_entity *wrr_se)
 }
 #ifdef CONFIG_SMP
 static struct 
-task_struct *pick_pullable_task_wrr(struct rq *src_rq) 
+task_struct *pick_pullable_task_wrr(struct rq *src_rq, int this_cpu) 
 {
 	struct task_struct *p = NULL;
-	struct sched_wrr_entity *wrr_se;
-
+	struct sched_wrr_entity *pos;
 	if (list_empty(&src_rq->wrr.queue)) {
 		return p;	
 	} 
 	
-	wrr_se = list_entry(src_rq->wrr.queue.prev, 
-			    struct sched_wrr_entity, run_list);
-	if (wrr_se) {
-		p = wrr_task_of(wrr_se);
+	pos = list_entry(src_rq->wrr.queue.next, 
+			  struct sched_wrr_entity, run_list);
+	list_for_each_entry_continue(pos, &src_rq->wrr.queue, run_list) {
+		p = wrr_task_of(pos);
+		if (cpumask_test_cpu(this_cpu, &p->cpus_allowed))
+			return p;
 	}
-
-	return p;
+	return NULL;
 }
 
 void idle_balance_wrr(struct rq *this_rq)
@@ -41,7 +41,7 @@ void idle_balance_wrr(struct rq *this_rq)
 		if (src_rq->wrr.wrr_nr_running <= 1)
 			goto skip;
 	
-		p = pick_pullable_task_wrr(src_rq);
+		p = pick_pullable_task_wrr(src_rq, this_cpu);
 		
 		if (p) {
 			WARN_ON(p == src_rq->curr);
@@ -50,6 +50,7 @@ void idle_balance_wrr(struct rq *this_rq)
 			deactivate_task(src_rq, p, 0);
 			set_task_cpu(p, this_cpu);
 			activate_task(this_rq, p, 0);
+			goto skip;
 		}
 skip:
 		double_unlock_balance(this_rq, src_rq);
