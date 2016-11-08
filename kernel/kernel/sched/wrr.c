@@ -15,11 +15,13 @@ task_struct *pick_pullable_task_wrr(struct rq *src_rq, int this_cpu)
 		return p;	
 	} 
 	
-	pos = list_entry(src_rq->wrr.queue.prev, struct sched_wrr_entity, run_list);
-	//list_for_each_entry_continue(pos, &src_rq->wrr.queue, run_list) {
-	p = wrr_task_of(pos);
-	if (cpumask_test_cpu(this_cpu, &p->cpus_allowed))
-		return p;
+	list_for_each_entry(pos, &src_rq->wrr.queue, run_list) {
+		p = wrr_task_of(pos);
+		if (p == src_rq->curr)
+			continue;
+		if (cpumask_test_cpu(this_cpu, &p->cpus_allowed))
+			return p;
+	}
 	return NULL;
 }
 
