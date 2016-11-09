@@ -6,15 +6,14 @@ static inline struct task_struct *wrr_task_of(struct sched_wrr_entity *wrr_se)
 	return container_of(wrr_se, struct task_struct, wrr);
 }
 #ifdef CONFIG_SMP
-static struct 
-task_struct *pick_pullable_task_wrr(struct rq *src_rq, int this_cpu) 
+static struct task_struct *pick_pullable_task_wrr(struct rq *src_rq,
+						  int this_cpu)
 {
 	struct task_struct *p = NULL;
 	struct sched_wrr_entity *pos;
-	if (list_empty(&src_rq->wrr.queue)) {
-		return p;	
-	} 
-	
+	if (list_empty(&src_rq->wrr.queue))
+		return p;
+
 	list_for_each_entry(pos, &src_rq->wrr.queue, run_list) {
 		p = wrr_task_of(pos);
 		if (p == src_rq->curr)
@@ -30,7 +29,7 @@ void idle_balance_wrr(struct rq *this_rq)
 	int this_cpu = this_rq->cpu, cpu;
 	struct task_struct *p;
 	struct rq *src_rq;
-	
+
 	for_each_possible_cpu(cpu) {
 		if (this_cpu == cpu)
 			continue;
@@ -40,9 +39,9 @@ void idle_balance_wrr(struct rq *this_rq)
 
 		if (src_rq->wrr.wrr_nr_running <= 1)
 			goto skip;
-	
+
 		p = pick_pullable_task_wrr(src_rq, this_cpu);
-		
+
 		if (p) {
 			if (p == src_rq->curr)
 				goto skip;
@@ -85,7 +84,8 @@ out:
 }
 #endif
 
-void init_wrr_rq(struct wrr_rq *wrr_rq) {
+void init_wrr_rq(struct wrr_rq *wrr_rq)
+{
 	INIT_LIST_HEAD(&wrr_rq->queue);
 	wrr_rq->wrr_nr_running = 0;
 
@@ -104,13 +104,9 @@ static void put_prev_task_wrr(struct rq *rq, struct task_struct *p)
 	/* Do nothiing */
 }
 
-static void 
-check_preempt_curr_wrr(struct rq *rq, struct task_struct *p, int flags)
+static void check_preempt_curr_wrr(struct rq *rq,
+				   struct task_struct *p, int flags)
 {
-	/* Do nothiing */
-	/* Since there is no priority in wrr scheduler, we don't have to 
-	 * schedule the new task and preempt the exsiting one.
-	 */
 }
 
 static struct task_struct *pick_next_task_wrr(struct rq *rq)
@@ -120,12 +116,12 @@ static struct task_struct *pick_next_task_wrr(struct rq *rq)
 	struct sched_wrr_entity *next = NULL;
 
 	wrr_rq = &rq->wrr;
-	
-	if (list_empty(&wrr_rq->queue)) {
-		return NULL;
-	}
 
-	next = list_entry(wrr_rq->queue.next, 
+	if (list_empty(&wrr_rq->queue))
+		return NULL;
+
+
+	next = list_entry(wrr_rq->queue.next,
 			  struct sched_wrr_entity, run_list);
 	p = wrr_task_of(next);
 	return p;
@@ -133,13 +129,13 @@ static struct task_struct *pick_next_task_wrr(struct rq *rq)
 
 static void dequeue_task_wrr(struct rq *rq, struct task_struct *p, int flags)
 {
-	struct sched_wrr_entity *wrr_se = &p->wrr;	
+	struct sched_wrr_entity *wrr_se = &p->wrr;
 	struct wrr_rq *wrr_rq = &rq->wrr;
 	int cpu;
-	if (wrr_se == NULL) 
+	if (wrr_se == NULL)
 		return;
 
-	list_del_init(&wrr_se->run_list);	
+	list_del_init(&wrr_se->run_list);
 	wrr_rq->wrr_nr_running--;
 	dec_nr_running(rq);
 	cpu = cpu_of(rq);
@@ -154,8 +150,8 @@ enqueue_task_wrr(struct rq *rq, struct task_struct *p, int flags)
 {
 	struct sched_wrr_entity *wrr_se = &p->wrr;
 	struct wrr_rq *wrr_rq = &rq->wrr;
-	int cpu;	
-	if (wrr_se == NULL) 
+	int cpu;
+	if (wrr_se == NULL)
 		return;
 	if (flags & ENQUEUE_HEAD)
 		list_add(&wrr_se->run_list, &wrr_rq->queue);
@@ -174,10 +170,10 @@ static void requeue_task_wrr(struct rq *rq, struct task_struct *p, int head)
 {
 	struct sched_wrr_entity *wrr_se = &p->wrr;
 	struct wrr_rq *wrr_rq = &rq->wrr;
-	
-	if (wrr_se == NULL) 
+
+	if (wrr_se == NULL)
 		return;
-	
+
 	list_move_tail(&wrr_se->run_list, &wrr_rq->queue);
 }
 
@@ -190,12 +186,12 @@ static void task_tick_wrr(struct rq *rq, struct task_struct *p, int queued)
 {
 	struct sched_wrr_entity *wrr_se = &p->wrr;
 	int cpu = cpu_of(rq);
-	if (wrr_se == NULL) 
+	if (wrr_se == NULL)
 		return;
 
 	if (--p->wrr.time_slice)
 		return;
-	
+
 	if (wrr_se->weight > 1) {
 		wrr_se->weight--;
 		raw_spin_lock(&wrr_info_locks[cpu]);
@@ -211,7 +207,7 @@ static void task_tick_wrr(struct rq *rq, struct task_struct *p, int queued)
 	}
 }
 
-static bool 
+static bool
 yield_to_task_wrr(struct rq *rq, struct task_struct *p, bool preempt)
 {
 	return true;
