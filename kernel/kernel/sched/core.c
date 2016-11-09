@@ -3322,8 +3322,11 @@ static void __sched_fork(struct task_struct *p)
 
 	INIT_LIST_HEAD(&p->rt.run_list);
 	INIT_LIST_HEAD(&p->wrr.run_list);
-	p->wrr.weight = 10;
-	p->wrr.time_slice = 10 * 10;
+	if (p->cred->uid >= 10000)
+		p->wrr.weight = wrr_boosted_weight;
+	else
+		p->wrr.weight = 1;
+	p->wrr.time_slice = 10 * p->wrr.weight;
 
 #ifdef CONFIG_PREEMPT_NOTIFIERS
 	INIT_HLIST_HEAD(&p->preempt_notifiers);
@@ -3370,10 +3373,6 @@ void sched_fork(struct task_struct *p)
 {
 	unsigned long flags;
 	int cpu = get_cpu();
-	if (p->cred->uid >= 10000) {
-		p->wrr.weight = wrr_boosted_weight;
-		p->wrr.time_slice = p->wrr.weight * 10;
-	}
 		
 	__sched_fork(p);
 	/*
