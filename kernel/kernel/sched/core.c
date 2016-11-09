@@ -5396,7 +5396,7 @@ void rt_mutex_setprio(struct task_struct *p, int prio)
 	if (rt_prio(prio))
 		p->sched_class = &rt_sched_class;
 	else
-		/* God of linux touched here */
+		/* Linux Tsai */
 		p->sched_class = &wrr_sched_class;
 
 	p->prio = prio;
@@ -9207,8 +9207,9 @@ EXPORT_SYMBOL(__might_sleep);
 static void normalize_task(struct rq *rq, struct task_struct *p)
 {
 	const struct sched_class *prev_class = p->sched_class;
+	/*Linux Tsai*/
 	struct sched_attr attr = {
-		.sched_policy = SCHED_WRR,
+		.sched_policy = SCHED_NORMAL,
 	};
 	int old_prio = p->prio;
 	int on_rq;

@@ -303,6 +303,7 @@ static ssize_t sysfs_test_command(struct device *dev, struct device_attribute *a
 	switch (op) {
 	case RTTEST_SCHEDOT:
 		schedpar.sched_priority = 0;
+		/*Linux Tsai*/
 		ret = sched_setscheduler(threads[tid], SCHED_WRR, &schedpar);
 		if (ret)
 			return ret;

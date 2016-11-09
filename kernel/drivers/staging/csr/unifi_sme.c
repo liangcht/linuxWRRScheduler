@@ -1111,7 +1111,6 @@ uf_ta_sample_ind_wq(struct work_struct *work)
         {
             struct sched_param param;
             param.sched_priority = 0;
-	    /* Linux Tsai */
             sched_setscheduler(priv->bh_thread.thread_task, SCHED_NORMAL, &param);
             priv->bh_thread.prio = DEFAULT_PRIO;
             unifi_trace(priv, UDBG1, "%s new thread priority = %d\n",
