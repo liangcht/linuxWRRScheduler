@@ -140,6 +140,7 @@ void __smp_mb__after_atomic(void)
 }
 EXPORT_SYMBOL(__smp_mb__after_atomic);
 #endif
+/*TODO: revise wrr_info*/
 struct wrr_info my_wrr_info = {
 	.num_cpus	= 0,
 	.nr_running = {0},
@@ -148,6 +149,7 @@ struct wrr_info my_wrr_info = {
 	.per_cpu_cfs_nr_running = {0},
 	.per_cpu_rt_nr_running = {0}
 };
+int wrr_boosted_weight = 10;
 raw_spinlock_t wrr_info_locks[MAX_CPUS];
 
 SYSCALL_DEFINE1(get_wrr_info, struct wrr_info __user *, wrr_info)
@@ -168,6 +170,11 @@ SYSCALL_DEFINE1(get_wrr_info, struct wrr_info __user *, wrr_info)
 
 SYSCALL_DEFINE1(set_wrr_weight, int, boosted_weight)
 {
+	if (current_uid())
+		return -EACCES;
+	if (boosted_weight < 1)
+		return -EINVAL;
+	wrr_boosted_weight = boosted_weight;
 	return 0;
 }
 void start_bandwidth_timer(struct hrtimer *period_timer, ktime_t period)
@@ -3364,7 +3371,7 @@ void sched_fork(struct task_struct *p)
 	unsigned long flags;
 	int cpu = get_cpu();
 	if (p->cred->uid >= 10000) {
-		p->wrr.weight = 10;
+		p->wrr.weight = wrr_boosted_weight;
 		p->wrr.time_slice = p->wrr.weight * 10;
 	}
 		

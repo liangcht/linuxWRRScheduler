@@ -13,6 +13,7 @@
 extern __read_mostly int scheduler_running;
 
 extern struct wrr_info my_wrr_info;
+extern int wrr_boosted_weight;
 extern raw_spinlock_t wrr_info_locks[MAX_CPUS];
 /*
  * Convert user-nice values [ -20 ... 0 ... 19 ]
