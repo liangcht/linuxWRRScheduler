@@ -128,13 +128,11 @@ static struct task_struct *pick_next_task_wrr(struct rq *rq)
 	next = list_entry(wrr_rq->queue.next, 
 			  struct sched_wrr_entity, run_list);
 	p = wrr_task_of(next);
-	//printk("wrr_pick_next_task pid = %d total_running = %d\n", p->pid, wrr_rq->wrr_nr_running);
 	return p;
 }
 
 static void dequeue_task_wrr(struct rq *rq, struct task_struct *p, int flags)
 {
-	//printk("dequeue_task_wrr: pid = %d\n", p->pid);
 	struct sched_wrr_entity *wrr_se = &p->wrr;	
 	struct wrr_rq *wrr_rq = &rq->wrr;
 	int cpu;
@@ -213,7 +211,8 @@ static void task_tick_wrr(struct rq *rq, struct task_struct *p, int queued)
 	}
 }
 
-static bool yield_to_task_wrr(struct rq *rq, struct task_struct *p, bool preempt)
+static bool 
+yield_to_task_wrr(struct rq *rq, struct task_struct *p, bool preempt)
 {
 	return true;
 }
@@ -230,9 +229,7 @@ const struct sched_class wrr_sched_class = {
 	.next			= &fair_sched_class,
 	.enqueue_task		= enqueue_task_wrr,
 	.dequeue_task		= dequeue_task_wrr,
-
 	.check_preempt_curr	= check_preempt_curr_wrr,
-
 	.pick_next_task		= pick_next_task_wrr,
 	.put_prev_task		= put_prev_task_wrr,
 	.yield_task		= yield_task_wrr,
@@ -241,20 +238,9 @@ const struct sched_class wrr_sched_class = {
 #ifdef CONFIG_SMP
 	.select_task_rq		= select_task_rq_wrr,
 	.prio_changed		= prio_changed_wrr,
-	//.set_cpus_allowed       = set_cpus_allowed_wrr,
-
-	//.rq_online              = rq_online_rt,
-	//.rq_offline             = rq_offline_rt,
-
-	//.pre_schedule		= pre_schedule_rt,
-	//.post_schedule		= post_schedule_rt,
-	//.task_woken		= task_woken_rt,
-	//.switched_from		= switched_from_rt,
-
 #endif
 
 	.set_curr_task          = set_curr_task_wrr,
 	.task_tick		= task_tick_wrr,
-
 	.switched_to		= switched_to_wrr,
 };

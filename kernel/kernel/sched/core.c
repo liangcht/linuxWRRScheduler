@@ -3392,7 +3392,6 @@ void sched_fork(struct task_struct *p)
 	 */
 	if (unlikely(p->sched_reset_on_fork)) {
 		if (task_has_rt_policy(p)) {
-			/* TODO : Change to SCHED_WRR after default set to wrr*/
 			p->policy = SCHED_WRR;
 			p->static_prio = NICE_TO_PRIO(0);
 			p->rt_priority = 0;
@@ -3409,7 +3408,6 @@ void sched_fork(struct task_struct *p)
 		p->sched_reset_on_fork = 0;
 	}
 
-	/* TODO: Set to &wrr_sched_class when change default to wrr*/
 	if (!rt_prio(p->prio))
 		p->sched_class = &wrr_sched_class;
 
