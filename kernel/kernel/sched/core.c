@@ -152,7 +152,7 @@ raw_spinlock_t wrr_info_locks[MAX_CPUS];
 SYSCALL_DEFINE1(get_wrr_info, struct wrr_info __user *, wrr_info)
 {
 	long retval;
-	retval = copy_to_user(wrr_info, &my_wrr_info, sizeof(my_wrr_info)) 
+	retval = copy_to_user(wrr_info, &my_wrr_info, sizeof(my_wrr_info)
 		? -EFAULT : my_wrr_info.num_cpus;
 	return retval;
 }
@@ -3362,7 +3362,7 @@ void sched_fork(struct task_struct *p)
 {
 	unsigned long flags;
 	int cpu = get_cpu();
-		
+
 	__sched_fork(p);
 	/*
 	 * We mark the process as running here. This guarantees that
@@ -5588,14 +5588,14 @@ static void __setscheduler(struct rq *rq, struct task_struct *p,
 
 	p->normal_prio = normal_prio(p);
 	p->prio = rt_mutex_getprio(p);
-	
+
 	if (policy == SCHED_WRR)
 		p->sched_class = &wrr_sched_class;
 	else if (rt_prio(p->prio))
 		p->sched_class = &rt_sched_class;
 	else
 		p->sched_class = &fair_sched_class;
-	
+
 	set_load_weight(p);
 }
 /*
@@ -8998,7 +8998,7 @@ void __init sched_init(void)
 	for_each_possible_cpu(i) {
 		struct rq *rq;
 		per_cpu(dptr, i) = per_cpu(dbuf, i);
-                my_wrr_info.num_cpus++;
+		my_wrr_info.num_cpus++;
 		raw_spin_lock_init(&wrr_info_locks[i]);
 		rq = cpu_rq(i);
 		raw_spin_lock_init(&rq->lock);
