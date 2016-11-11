@@ -445,7 +445,7 @@ static void watchdog_enable(unsigned int cpu)
 static void watchdog_disable(unsigned int cpu)
 {
 	struct hrtimer *hrtimer = &__raw_get_cpu_var(watchdog_hrtimer);
-	
+
 	/* Linux Tsai */
 	watchdog_set_prio(SCHED_NORMAL, 0);
 	hrtimer_cancel(hrtimer);
