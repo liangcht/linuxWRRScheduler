@@ -36,8 +36,8 @@ void check_wrr_info(void)
 
 int main(void)
 {
-	int n = 5000;
-	pid_t pid[5000];
+	int n = 10;
+	pid_t pid[10];
 	int i;
 
 	/*syscall(245, 100);*/
