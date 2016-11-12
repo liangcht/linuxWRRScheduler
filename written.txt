@@ -1,1 +1,9 @@
+We have tried different combinations of weight and number of processes. The experiments we have run:
+weight=10, n=10
+weight=10, n=5000
+weight=2000, n=5000
+weight=2000, n=10
+we noticed that when the weight is very large(weight=2000), the scheduler works very similar to FIFO. Whatever that is in the front of run queue takes a fair amount of CPU time.  So when we run different processes on the phone, it tends to not be able to give fast response.
+when the weight is small(weight=10), 
+when n is large (n=5000), our load balancing works pretty well and each run queue of processing core has almost the same amount of tasks. 
 
