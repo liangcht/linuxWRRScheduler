@@ -1,12 +1,14 @@
 We have tried different combinations of weight and number of processes. The experiments we have run:
 
+weight=1, n=10
+weight=5, n=10
 weight=10, n=10
-weight=10, n=5000
-weight=20, n=5000
 weight=20, n=10
+weight=30, n=10
+weight=40, n=10
+weight=50, n=10
 
-we noticed that when the weight is very large(weight=20), the scheduler works very similar to FIFO. When n=10, there are only 8 processing core (namely 8 run queue), those two processes which are not in the front of any 8 run queue have to wait for large amount of time before having the chance to get executed. So their weights remained the same for a longer time. So we can obeserve that at some point, some run queues have avg weight of ~3 and some other queues have avg weight of 20. 
-when the weight is small(weight=10), each task gets fair amount of time to be executed and the switching between the tasks is very quick since the time slice is small as well. When n=10, we can see the weights of all 10 processes were dropped at a high and similar speed. 
+we noticed that when the weight is very large(weight=50), the scheduler works very similar to FIFO. The program is not responsive in terms of dropping the weight of processes. When n=10, there are only 8 processing core (namely 8 run queue), those two processes which are not in the front of any 8 run queue have to wait for large amount of time before having the chance to get executed. So their weights remained the same for a longer time. So we can obeserve that at some point, some run queues have avg weight of ~3 and some other queues have avg weight of 50. 
+when the weight is small(weight=1, 5, 10), each task gets fair amount of time to be executed and the switching between the tasks is very quick since the time slice is small as well. We can see the weights of all 10 processes were dropped at a high and similar speed. 
 
-when n is large (n==5000), our load balancing works pretty well and each run queue of processing core has almost the same amount of tasks(~620). 
 
